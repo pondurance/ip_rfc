@@ -3,6 +3,16 @@ name = "ip_rfc"
 version = "0.1.0"
 authors = ["Craig Hills <craig.hills@pondurance.com>"]
 edition = "2018"
+keywords = ["ip", "global"]
+repository = "https://github.com/pondurance/ip_rfc"
+license = "MIT OR Apache-2.0"
+categories = ["network-programming"]
+readme = "README.md"
+description = "IP address globally routable checking for stable rust"
+
+
+[badges]
+maintenance = { status = "passively-maintained" }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

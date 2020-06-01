@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use std::net::*;
 
 pub fn global(addr: &IpAddr) -> bool {
@@ -16,59 +17,61 @@ pub fn global_v6(addr: &Ipv6Addr) -> bool {
         }
     } else {
         !addr.is_loopback()
-            && !unicast_link_local_v6(addr)
-            && !unique_local_v6(addr)
+            && !unicast_link_local_v6(*addr)
+            && !unique_local_v6(*addr)
             && !addr.is_unspecified()
-            && !documentation_v6(addr)
+            && !documentation_v6(*addr)
     }
 }
 
-pub fn unicast_link_local_v6(addr: &Ipv6Addr) -> bool {
+fn unicast_link_local_v6(addr: Ipv6Addr) -> bool {
     (addr.segments()[0] & 0xffc0) == 0xfe80
 }
 
-pub fn unique_local_v6(addr: &Ipv6Addr) -> bool {
+fn unique_local_v6(addr: Ipv6Addr) -> bool {
     (addr.segments()[0] & 0xfe00) == 0xfc00
 }
 
-pub fn documentation_v6(addr: &Ipv6Addr) -> bool {
+fn documentation_v6(addr: Ipv6Addr) -> bool {
     (addr.segments()[0] == 0x2001) && (addr.segments()[1] == 0xdb8)
 }
 
 pub fn global_v4(addr: &Ipv4Addr) -> bool {
     // check if this address is 192.0.0.9 or 192.0.0.10. These addresses are the only two
     // globally routable addresses in the 192.0.0.0/24 range.
-    let u32_form = u32::from(addr.clone());
+    let u32_form = u32::from(*addr);
     if u32_form == 0xc0000009 || u32_form == 0xc000000a {
         return true;
     }
+
+    let octs = addr.octets();
 
     !addr.is_private()
         && !addr.is_loopback()
         && !addr.is_link_local()
         && !addr.is_broadcast()
         && !addr.is_documentation()
-        && !shared_v4(&addr)
-        && !ietf_protocol_assignment_v4(&addr)
-        && !reserved_v4(&addr)
-        && !benchmarking_v4(&addr)
-        // Make sure the address is not in 0.0.0.0/8
-        && addr.octets()[0] != 0
+        && !shared_v4(&octs)
+        && !ietf_protocol_assignment_v4(&octs)
+        && !reserved_v4(*addr, &octs)
+        && !benchmarking_v4(&octs)
+        && octs[0] != 0
 }
 
-fn benchmarking_v4(addr: &Ipv4Addr) -> bool {
-    addr.octets()[0] == 198 && (addr.octets()[1] & 0xfe) == 18
+fn benchmarking_v4(octs: &[u8]) -> bool {
+    octs[0] == 198 && (octs[1] & 0xfe) == 18
 }
 
-fn reserved_v4(addr: &Ipv4Addr) -> bool {
-    addr.octets()[0] & 240 == 240 && !addr.is_broadcast()
+fn reserved_v4(addr: Ipv4Addr, octs: &[u8]) -> bool {
+    octs[0] & 240 == 240 && !addr.is_broadcast()
 }
 
-fn ietf_protocol_assignment_v4(addr: &Ipv4Addr) -> bool {
-    addr.octets()[0] == 192 && addr.octets()[1] == 0 && addr.octets()[2] == 0
+fn ietf_protocol_assignment_v4(octs: &[u8]) -> bool {
+    octs[0] == 192 && octs[1] == 0 && octs[2] == 0
 }
-fn shared_v4(addr: &Ipv4Addr) -> bool {
-    addr.octets()[0] == 100 && (addr.octets()[1] & 0b1100_0000 == 0b0100_0000)
+
+fn shared_v4(octs: &[u8]) -> bool {
+    octs[0] == 100 && (octs[1] & 0b1100_0000 == 0b0100_0000)
 }
 
 // Tests for this module
